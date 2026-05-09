@@ -24,8 +24,21 @@ class Object3d(object):
         self.l = float(label[10])
         self.pos = np.array((float(label[11]), float(label[12]), float(label[13])), dtype=np.float32)
         self.dis_to_cam = np.linalg.norm(self.pos)
-        self.ry = float(label[14])
-        self.score = float(label[15]) if label.__len__() == 16 else -1.0
+# Custom full rotation format:
+# class truncation occlusion alpha x1 y1 x2 y2 h w l x y z rx ry rz [score]
+#
+# If the label is normal KITTI format, it only has ry at index 14.
+# In that case, rx and rz are set to 0.
+        if len(label) >= 17:
+            self.rx = float(label[14])
+            self.ry = float(label[15])
+            self.rz = float(label[16])
+            self.score = float(label[17]) if len(label) >= 18 else -1.0
+        else:
+            self.rx = 0.0
+            self.ry = float(label[14])
+            self.rz = 0.0
+            self.score = float(label[15]) if len(label) == 16 else -1.0
         self.level_str = None
         self.level = self.get_obj_level()
 
