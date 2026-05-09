@@ -111,17 +111,19 @@ class Object3d(object):
 
 
     def to_str(self):
-        print_str = '%s %.3f %.3f %.3f box2d: %s hwl: [%.3f %.3f %.3f] pos: %s ry: %.3f' \
+        print_str = '%s %.3f %.3f %.3f box2d: %s hwl: [%.3f %.3f %.3f] pos: %s rx: %.3f ry: %.3f rz: %.3f' \
                      % (self.cls_type, self.trucation, self.occlusion, self.alpha, self.box2d, self.h, self.w, self.l,
                         self.pos, self.rx, self.ry, self.rz)
         return print_str
 
 
     def to_kitti_format(self):
-        kitti_str = '%s %.2f %d %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f' \
-                    % (self.cls_type, self.trucation, int(self.occlusion), self.alpha, self.box2d[0], self.box2d[1],
-                       self.box2d[2], self.box2d[3], self.h, self.w, self.l, self.pos[0], self.pos[1], self.pos[2],
-                       self.ry)
+        kitti_str = '%s %.2f %d %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f' \
+                    % (self.cls_type, self.trucation, int(self.occlusion), self.alpha,
+                       self.box2d[0], self.box2d[1], self.box2d[2], self.box2d[3],
+                       self.h, self.w, self.l,
+                       self.pos[0], self.pos[1], self.pos[2],
+                       self.rx, self.ry, self.rz)
         return kitti_str
 
 
