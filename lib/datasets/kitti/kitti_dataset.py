@@ -183,6 +183,8 @@ class KITTI_Dataset(data.Dataset):
                 object.box2d[0],  object.box2d[2] = img_size[0] - x2, img_size[0] - x1
                 object.alpha = np.pi - object.alpha
                 object.ry = np.pi - object.ry
+                object.rx = -object.rx   # pitch flips sign under horizontal mirror
+                object.rz = -object.rz   # roll flips sign under horizontal mirror
                 if self.aug_calib:
                     object.pos[0] *= -1
                 if object.alpha > np.pi:  object.alpha -= 2 * np.pi  # check range
