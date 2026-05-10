@@ -62,7 +62,7 @@ class KITTI_Dataset(data.Dataset):
         self.aug_crop = cfg.get('aug_crop', False)
         self.aug_calib = cfg.get('aug_calib', False)
 
-        self.random_flip = cfg.get('random_flip', 0.5)
+        self.random_flip = cfg.get('random_flip', 0.0)
         self.random_crop = cfg.get('random_crop', 0.5)
         self.scale = cfg.get('scale', 0.4)
         self.shift = cfg.get('shift', 0.1)
