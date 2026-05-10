@@ -196,8 +196,8 @@ class KITTI_Dataset(data.Dataset):
         mask_2d = np.zeros((self.max_objs), dtype=bool)
         labels = np.zeros((self.max_objs), dtype=np.int8)
         depth = np.zeros((self.max_objs, 1), dtype=np.float32)
-        heading_bin = np.zeros((self.max_objs, 1), dtype=np.int64)
-        heading_res = np.zeros((self.max_objs, 1), dtype=np.float32)
+        heading_bin = np.zeros((self.max_objs, 3), dtype=np.int64)
+        heading_res = np.zeros((self.max_objs, 3), dtype=np.float32)
         size_2d = np.zeros((self.max_objs, 2), dtype=np.float32) 
         size_3d = np.zeros((self.max_objs, 3), dtype=np.float32)
         src_size_3d = np.zeros((self.max_objs, 3), dtype=np.float32)
@@ -293,10 +293,21 @@ class KITTI_Dataset(data.Dataset):
                 depth[i] = objects[i].pos[-1]
 
             # encoding heading angle
-            heading_angle = calib.ry2alpha(objects[i].ry, (objects[i].box2d[0] + objects[i].box2d[2]) / 2)
-            if heading_angle > np.pi:  heading_angle -= 2 * np.pi  # check range
-            if heading_angle < -np.pi: heading_angle += 2 * np.pi
-            heading_bin[i], heading_res[i] = angle2class(heading_angle)
+            # Encode rx, ry, rz using the same bin/residual logic.
+            # For ry, we keep the original KITTI alpha logic.
+            cx_2d = (objects[i].box2d[0] + objects[i].box2d[2]) / 2
+            
+            rx_angle = objects[i].rx
+            ry_angle = calib.ry2alpha(objects[i].ry, cx_2d)
+            rz_angle = objects[i].rz
+            
+            for axis_id, angle in enumerate([rx_angle, ry_angle, rz_angle]):
+                if angle > np.pi:
+                    angle -= 2 * np.pi
+                if angle < -np.pi:
+                    angle += 2 * np.pi
+            
+                heading_bin[i, axis_id], heading_res[i, axis_id] = angle2class(angle)
 
             # encoding size_3d
             src_size_3d[i] = np.array([objects[i].h, objects[i].w, objects[i].l], dtype=np.float32)
