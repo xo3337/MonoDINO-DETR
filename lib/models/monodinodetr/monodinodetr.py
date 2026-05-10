@@ -453,79 +453,78 @@ class SetCriterion(nn.Module):
         return losses
     #d
     def _single_axis_angle_loss(self, heading_input, target_cls, target_res):
-    """
-    heading_input: [N, 24]
-    target_cls: [N]
-    target_res: [N]
-    """
-    heading_target_cls = target_cls.view(-1).long()
-    heading_target_res = target_res.view(-1)
+        """
+        heading_input: [N, 24]
+        target_cls: [N]
+        target_res: [N]
+        """
+        heading_target_cls = target_cls.view(-1).long()
+        heading_target_res = target_res.view(-1)
 
-    # Classification loss
-    heading_input_cls = heading_input[:, 0:12]
-    cls_loss = F.cross_entropy(heading_input_cls, heading_target_cls, reduction='none')
+        # Classification loss
+        heading_input_cls = heading_input[:, 0:12]
+        cls_loss = F.cross_entropy(heading_input_cls, heading_target_cls, reduction='none')
 
-    # Residual regression loss
-    heading_input_res = heading_input[:, 12:24]
-    cls_onehot = torch.zeros(
-        heading_target_cls.shape[0],
-        12,
-        device=heading_input.device
-    ).scatter_(dim=1, index=heading_target_cls.view(-1, 1), value=1)
+        # Residual regression loss
+        heading_input_res = heading_input[:, 12:24]
+        cls_onehot = torch.zeros(
+            heading_target_cls.shape[0],
+            12,
+            device=heading_input.device
+        ).scatter_(dim=1, index=heading_target_cls.view(-1, 1), value=1)
 
-    heading_input_res = torch.sum(heading_input_res * cls_onehot, dim=1)
-    reg_loss = F.l1_loss(heading_input_res, heading_target_res, reduction='none')
+        heading_input_res = torch.sum(heading_input_res * cls_onehot, dim=1)
+        reg_loss = F.l1_loss(heading_input_res, heading_target_res, reduction='none')
 
-    return cls_loss + reg_loss
+        return cls_loss + reg_loss
 
+    def loss_angles(self, outputs, targets, indices, num_boxes):
+        idx = self._get_src_permutation_idx(indices)
 
-def loss_angles(self, outputs, targets, indices, num_boxes):
-    idx = self._get_src_permutation_idx(indices)
+        # [N, 72]
+        heading_input = outputs['pred_angle'][idx]
 
-    # [N, 72]
-    heading_input = outputs['pred_angle'][idx]
+        # [N, 3]
+        target_heading_cls = torch.cat(
+            [t['heading_bin'][i] for t, (_, i) in zip(targets, indices)],
+            dim=0
+        )
 
-    # [N, 3]
-    target_heading_cls = torch.cat(
-        [t['heading_bin'][i] for t, (_, i) in zip(targets, indices)],
-        dim=0
-    )
+        target_heading_res = torch.cat(
+            [t['heading_res'][i] for t, (_, i) in zip(targets, indices)],
+            dim=0
+        )
 
-    target_heading_res = torch.cat(
-        [t['heading_res'][i] for t, (_, i) in zip(targets, indices)],
-        dim=0
-    )
+        heading_input = heading_input.view(-1, 72)
 
-    heading_input = heading_input.view(-1, 72)
+        rx_input = heading_input[:, 0:24]
+        ry_input = heading_input[:, 24:48]
+        rz_input = heading_input[:, 48:72]
 
-    rx_input = heading_input[:, 0:24]
-    ry_input = heading_input[:, 24:48]
-    rz_input = heading_input[:, 48:72]
+        rx_loss = self._single_axis_angle_loss(
+            rx_input,
+            target_heading_cls[:, 0],
+            target_heading_res[:, 0]
+        )
 
-    rx_loss = self._single_axis_angle_loss(
-        rx_input,
-        target_heading_cls[:, 0],
-        target_heading_res[:, 0]
-    )
+        ry_loss = self._single_axis_angle_loss(
+            ry_input,
+            target_heading_cls[:, 1],
+            target_heading_res[:, 1]
+        )
 
-    ry_loss = self._single_axis_angle_loss(
-        ry_input,
-        target_heading_cls[:, 1],
-        target_heading_res[:, 1]
-    )
+        rz_loss = self._single_axis_angle_loss(
+            rz_input,
+            target_heading_cls[:, 2],
+            target_heading_res[:, 2]
+        )
 
-    rz_loss = self._single_axis_angle_loss(
-        rz_input,
-        target_heading_cls[:, 2],
-        target_heading_res[:, 2]
-    )
+        angle_loss = rx_loss + ry_loss + rz_loss
 
-    angle_loss = rx_loss + ry_loss + rz_loss
+        losses = {}
+        losses['loss_angle'] = angle_loss.sum() / num_boxes
 
-    losses = {}
-    losses['loss_angle'] = angle_loss.sum() / num_boxes
-
-    return losses
+        return losses
 
     def loss_depth_map(self, outputs, targets, indices, num_boxes):
         depth_map_logits = outputs['pred_depth_map_logits']
