@@ -1,7 +1,19 @@
 import numpy as np
 import cv2
+# ── moved to module level (was incorrectly indented inside Object3d) ──
+def rotation_matrix_xyz(rx, ry, rz):
+    cx, sx = np.cos(rx), np.sin(rx)
+    cy, sy = np.cos(ry), np.sin(ry)
+    cz, sz = np.cos(rz), np.sin(rz)
+
+    Rx = np.array([[1, 0, 0], [0, cx, -sx], [0, sx, cx]])
+    Ry = np.array([[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]])
+    Rz = np.array([[cz, -sz, 0], [sz, cz, 0], [0, 0, 1]])
+
+    return Rz @ Ry @ Rx
 
 ################  Object3D  ##################
+
 
 def get_objects_from_label(label_file):
     with open(label_file, 'r') as f:
@@ -62,31 +74,6 @@ class Object3d(object):
         else:
             self.level_str = 'UnKnown'
             return 4
-    def rotation_matrix_xyz(rx, ry, rz):
-            cx, sx = np.cos(rx), np.sin(rx)
-            cy, sy = np.cos(ry), np.sin(ry)
-            cz, sz = np.cos(rz), np.sin(rz)
-        
-            Rx = np.array([
-                [1, 0, 0],
-                [0, cx, -sx],
-                [0, sx, cx]
-            ])
-        
-            Ry = np.array([
-                [cy, 0, sy],
-                [0, 1, 0],
-                [-sy, 0, cy]
-            ])
-        
-            Rz = np.array([
-                [cz, -sz, 0],
-                [sz, cz, 0],
-                [0, 0, 1]
-            ])
-        
-            # Order: first X, then Y, then Z
-            return Rz @ Ry @ Rx
 
     def generate_corners3d(self):
         """
