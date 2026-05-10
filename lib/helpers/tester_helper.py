@@ -137,20 +137,27 @@ class Tester(object):
                 output_path = os.path.join(output_dir,
                                            self.dataloader.dataset.get_sensor_modality(img_id),
                                            self.dataloader.dataset.get_sample_token(img_id) + '.txt')
-
             f = open(output_path, 'w')
             for i in range(len(results[img_id])):
-                class_name = self.class_name[int(results[img_id][i][0])]
-                f.write('{} 0.0 0'.format(class_name))
-                for j in range(1, len(results[img_id][i])):
-                    f.write(' {:.2f}'.format(results[img_id][i][j]))
-                f.write('\n')
+                pred = results[img_id][i]
+                class_name = self.class_name[int(pred[0])]
+                alpha   = pred[1]
+                x1,y1,x2,y2 = pred[2], pred[3], pred[4], pred[5]
+                h,w,l   = pred[6], pred[7], pred[8]
+                x,y,z   = pred[9], pred[10], pred[11]
+                rx,ry,rz = pred[12], pred[13], pred[14]
+                score   = pred[15]
+                f.write('{} 0.0 0 {:.4f} {:.2f} {:.2f} {:.2f} {:.2f} '
+                        '{:.2f} {:.2f} {:.2f} {:.3f} {:.3f} {:.3f} '
+                        '{:.4f} {:.4f} {:.4f} {:.4f}\n'.format(
+                        class_name, alpha, x1, y1, x2, y2,
+                        h, w, l, x, y, z, rx, ry, rz, score))
             f.close()
 
     def evaluate(self):
         if not comm.is_main_process():
             return None
-        results_dir = os.path.join(self.output_dir, 'outputs', 'data')
-        assert os.path.exists(results_dir)
-        result = self.dataloader.dataset.eval(results_dir=results_dir, logger=self.logger)
-        return result
+        # Official KITTI eval expects single ry — not compatible with
+        # custom rx/ry/rz format. Skipping until a custom evaluator is added.
+        self.logger.info("==> Skipping official KITTI eval (custom rx/ry/rz format).")
+        return None
