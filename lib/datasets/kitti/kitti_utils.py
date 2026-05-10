@@ -62,7 +62,31 @@ class Object3d(object):
         else:
             self.level_str = 'UnKnown'
             return 4
-
+    def rotation_matrix_xyz(rx, ry, rz):
+            cx, sx = np.cos(rx), np.sin(rx)
+            cy, sy = np.cos(ry), np.sin(ry)
+            cz, sz = np.cos(rz), np.sin(rz)
+        
+            Rx = np.array([
+                [1, 0, 0],
+                [0, cx, -sx],
+                [0, sx, cx]
+            ])
+        
+            Ry = np.array([
+                [cy, 0, sy],
+                [0, 1, 0],
+                [-sy, 0, cy]
+            ])
+        
+            Rz = np.array([
+                [cz, -sz, 0],
+                [sz, cz, 0],
+                [0, 0, 1]
+            ])
+        
+            # Order: first X, then Y, then Z
+            return Rz @ Ry @ Rx
 
     def generate_corners3d(self):
         """
@@ -73,13 +97,13 @@ class Object3d(object):
         x_corners = [l / 2, l / 2, -l / 2, -l / 2, l / 2, l / 2, -l / 2, -l / 2]
         y_corners = [0, 0, 0, 0, -h, -h, -h, -h]
         z_corners = [w / 2, -w / 2, -w / 2, w / 2, w / 2, -w / 2, -w / 2, w / 2]
+        
+        R = rotation_matrix_xyz(self.rx, self.ry, self.rz)
 
-        R = np.array([[np.cos(self.ry), 0, np.sin(self.ry)],
-                      [0, 1, 0],
-                      [-np.sin(self.ry), 0, np.cos(self.ry)]])
         corners3d = np.vstack([x_corners, y_corners, z_corners])  # (3, 8)
         corners3d = np.dot(R, corners3d).T
         corners3d = corners3d + self.pos
+        
         return corners3d
 
 
