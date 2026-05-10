@@ -34,23 +34,36 @@ def decode_detections(dets, info, calibs, cls_mean_size, threshold):
             depth = dets[i, j, 6]
 
             # dimensions decoding
-            dimensions = dets[i, j, 31:34]
+            dimensions = dets[i, j, 79:82]
             dimensions += cls_mean_size[int(cls_id)]
 
             # positions decoding
-            x3d = dets[i, j, 34] * info['img_size'][i][0]
-            y3d = dets[i, j, 35] * info['img_size'][i][1]
+            
+            x3d = dets[i, j, 82] * info['img_size'][i][0]
+            y3d = dets[i, j, 83] * info['img_size'][i][1]
+
             locations = calibs[i].img_to_rect(x3d, y3d, depth).reshape(-1)
             locations[1] += dimensions[0] / 2
 
             # heading angle decoding
-            alpha = get_heading_angle(dets[i, j, 7:31])
+            rx = get_heading_angle(dets[i, j, 7:31])
+            
+            alpha = get_heading_angle(dets[i, j, 31:55])
             ry = calibs[i].alpha2ry(alpha, x)
-
-
+            
+            rz = get_heading_angle(dets[i, j, 55:79])
+            
             score = score * dets[i, j, -1]
-            preds.append([cls_id, alpha] + bbox + dimensions.tolist() + locations.tolist() + [ry, score])
-        results[info['img_id'][i]] = preds
+            
+            # Output format:
+            # cls_id, alpha, bbox, dimensions, location, rx, ry, rz, score
+            preds.append(
+                [cls_id, alpha]
+                + bbox
+                + dimensions.tolist()
+                + locations.tolist()
+                + [rx, ry, rz, score]
+            )
     return results
 
 
@@ -84,7 +97,7 @@ def extract_dets_from_outputs(outputs, K=50, topk=50):
     xs3d = boxes[:, :, 0: 1] 
     ys3d = boxes[:, :, 1: 2] 
 
-    heading = torch.gather(heading, 1, topk_boxes.repeat(1, 1, 24))
+    heading = torch.gather(heading, 1, topk_boxes.repeat(1, 1, 72))
     depth = torch.gather(depth, 1, topk_boxes)
     sigma = torch.gather(sigma, 1, topk_boxes) 
     size_3d = torch.gather(size_3d, 1, topk_boxes.repeat(1, 1, 3))
